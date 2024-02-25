@@ -14,9 +14,7 @@ spring:
     hibernate:
       ddl-auto: update
 
-data:
-  redis:
-    host: redis-server
+
 
 
 

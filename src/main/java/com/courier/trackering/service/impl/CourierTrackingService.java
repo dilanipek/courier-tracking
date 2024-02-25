@@ -9,18 +9,21 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class CourierTrackingService implements ICourierTrackingService {
 
-  private final RedisTemplate<String, Object> redisTemplate;
+  private final Map<String, Object> concurrentHap = new ConcurrentHashMap<>();
 
   @Override
   public boolean isReentryWithinTimeThreshold(CourierRequest courier, StoreEntity store) {
     String key = courier.getId() + "_" + store.getId();
-    Long lastEntranceTime = (Long) redisTemplate.opsForValue().get(key);
+    Long lastEntranceTime = (Long) concurrentHap.get(key);
 
     if (lastEntranceTime != null) {
       long currentTimestamp = getCurrentTimestampInIstanbul();
@@ -38,9 +41,9 @@ public class CourierTrackingService implements ICourierTrackingService {
     String key = courier.getId() + "_" + storeEntity.getId();
 
     // Only update the timestamp if it's the first entrance or a reentry has occurred
-    if (redisTemplate.opsForValue().get(key) == null) {
+    if (concurrentHap.get(key) == null) {
       long currentTimestamp = getCurrentTimestampInIstanbul();
-      redisTemplate.opsForValue().set(key, currentTimestamp, 1, TimeUnit.MINUTES);
+      concurrentHap.put(key, currentTimestamp);
     }
   }
 

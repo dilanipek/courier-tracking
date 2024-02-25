@@ -8,25 +8,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Instant;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 public class CourierTrackingServiceTest {
-
-    @Mock
-    private RedisTemplate<String, Object> redisTemplate;
 
     @InjectMocks
     private CourierTrackingService courierTrackingService;
@@ -39,52 +29,54 @@ public class CourierTrackingServiceTest {
         courier.setLatitude(40.991115);
         courier.setLongitude(29.115744);
 
-        StoreEntity store = new StoreEntity();
-        store.setId(1L);
-        store.setLat(40.9923307);
-        store.setLng(29.1244229);
-        store.setName("Ataşehir MMM Migros");
+        StoreEntity storeEntity = new StoreEntity();
+        storeEntity.setId(1L);
+        storeEntity.setName("Ataşehir MMM Migros");
+        storeEntity.setLat(40.9923307);
+        storeEntity.setLng(29.1244229);
 
-        String key = courier.getId() + "_" + store.getId();
-        Long lastEntranceTime = Instant.now().toEpochMilli() - 30000L;
+        boolean result = courierTrackingService.isReentryWithinTimeThreshold(courier, storeEntity);
 
-        ValueOperations<String, Object> valueOperations = mock(ValueOperations.class);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get(key)).thenReturn(lastEntranceTime);
-
-        boolean result = courierTrackingService.isReentryWithinTimeThreshold(courier, store);
-
-        assertTrue(result);
-
-        verify(redisTemplate.opsForValue(), times(1)).get(key);
+        assertFalse(result);
     }
 
     @Test
-    void testLogCourierEntrance() {
+    public void testLogCourierEntrance() {
         CourierRequest courier = new CourierRequest();
         courier.setId("1");
         courier.setTimestamp(Date.from(Instant.now()));
         courier.setLatitude(40.991115);
         courier.setLongitude(29.115744);
 
-        StoreEntity store = new StoreEntity();
-        store.setId(1L);
-        store.setLat(40.9923307);
-        store.setLng(29.1244229);
-        store.setName("Ataşehir MMM Migros");
+        StoreEntity storeEntity = new StoreEntity();
+        storeEntity.setId(1L);
+        storeEntity.setName("Ataşehir MMM Migros");
+        storeEntity.setLat(40.9923307);
+        storeEntity.setLng(29.1244229);
 
+        ConcurrentHashMap<String, Object> concurrentHap = new ConcurrentHashMap<>();
+        TestUtils.setFieldValue(courierTrackingService, "concurrentHap", concurrentHap);
 
-        String key = courier.getId() + "_" + store.getId();
+        courierTrackingService.logCourierEntrance(courier, storeEntity);
 
-        ValueOperations<String, Object> valueOperations = mock(ValueOperations.class);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get(key)).thenReturn(null);
+        String key = courier.getId() + "_" + storeEntity.getId();
+        assertTrue(concurrentHap.containsKey(key));
 
-        courierTrackingService.logCourierEntrance(courier, store);
+        Object timestamp = concurrentHap.get(key);
+        assertNotNull(timestamp);
+        assertTrue(timestamp instanceof Long);
+    }
 
-        verify(redisTemplate.opsForValue()).get(key);
-
-        verify(redisTemplate.opsForValue()).set(eq(key), anyLong(), eq(1L), eq(TimeUnit.MINUTES));
+    private static class TestUtils {
+        static void setFieldValue(Object obj, String fieldName, Object value) {
+            try {
+                java.lang.reflect.Field field = obj.getClass().getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(obj, value);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
 

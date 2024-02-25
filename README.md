@@ -16,7 +16,7 @@
    docker-compose  up  --build -d  
   ```
 
-- Wait a little bit until `postgres` and `redis` container is Up (healthy). You can check their status running
+- Wait a little bit until `postgres` container is Up (healthy). You can check their status running
   ```
   docker-compose ps
   ```

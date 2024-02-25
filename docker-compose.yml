@@ -1,0 +1,50 @@
+version: '2.1'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: courierdb
+      POSTGRES_USER: courieruser
+      POSTGRES_PASSWORD: courierpassword
+    ports:
+      - "5432:5432"
+    networks:
+      - redis_app_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U courieruser -d courierdb"]
+      interval: 10s
+      retries: 5
+
+#  # Spring Boot Application
+#  spring-app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#    links:
+#      - redis-server
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courierdb
+#      SPRING_DATASOURCE_USERNAME: courieruser
+#      SPRING_DATASOURCE_PASSWORD: courierpassword
+#    networks:
+#      - redis_app_net
+
+  # Redis
+  redis-server:
+    image: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - redis_app_net
+
+networks:
+  redis_app_net:
+    driver: bridge

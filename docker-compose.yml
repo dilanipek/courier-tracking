@@ -18,24 +18,24 @@ services:
       interval: 10s
       retries: 5
 
-#  # Spring Boot Application
-#  spring-app:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8080:8080"
-#    depends_on:
-#      postgres:
-#        condition: service_healthy
-#    links:
-#      - redis-server
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courierdb
-#      SPRING_DATASOURCE_USERNAME: courieruser
-#      SPRING_DATASOURCE_PASSWORD: courierpassword
-#    networks:
-#      - redis_app_net
+  # Spring Boot Application
+  spring-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    links:
+      - redis-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courierdb
+      SPRING_DATASOURCE_USERNAME: courieruser
+      SPRING_DATASOURCE_PASSWORD: courierpassword
+    networks:
+      - redis_app_net
 
   # Redis
   redis-server:

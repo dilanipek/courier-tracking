@@ -19,13 +19,3 @@ spring:
   #  level:
   #    root: DEBUG
 
-
-  redis:
-    host: localhost
-    port: 6379
-  cache:
-    type: redis
-    redis:
-      time-to-live: 180000
-
-
